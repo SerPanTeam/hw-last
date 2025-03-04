@@ -35,7 +35,7 @@ export default tseslint.config(
       'prettier/prettier': [
         'error',
         {
-          endOfLine: 'lf', // или 'auto', но при CRLF часто возникают конфликты
+          endOfLine: 'crlf', // или 'auto', но при CRLF часто возникают конфликты
         },
       ],
     },
