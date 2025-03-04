@@ -49,13 +49,13 @@ Content-Type: application/json
   "title": "My first article",
   "content": "Here is the content"
 }
-
+###
 // Получить все статьи
 GET {{baseUrl}}/articles
-
+###
 // Получить статью по ID
 GET {{baseUrl}}/articles/1
-
+###
 // Обновить статью
 PATCH {{baseUrl}}/articles/1
 Content-Type: application/json
@@ -63,7 +63,7 @@ Content-Type: application/json
 {
   "content": "Updated content"
 }
-
+###
 // Удалить статью
 DELETE {{baseUrl}}/articles/1
 
@@ -79,13 +79,13 @@ Content-Type: application/json
 {
   "name": "NestJS"
 }
-
+###
 // Получить все теги
 GET {{baseUrl}}/tags
-
+###
 // Получить тег по ID
 GET {{baseUrl}}/tags/1
-
+###
 // Обновить тег
 PATCH {{baseUrl}}/tags/1
 Content-Type: application/json
@@ -93,7 +93,7 @@ Content-Type: application/json
 {
   "name": "Updated Tag"
 }
-
+###
 // Удалить тег
 DELETE {{baseUrl}}/tags/1
 
@@ -110,13 +110,13 @@ Content-Type: application/json
   "name": "Cool Publisher",
   "location": "New York"
 }
-
+###
 // Получить всех издателей
 GET {{baseUrl}}/publisher
-
+###
 // Получить издателя по ID
 GET {{baseUrl}}/publisher/1
-
+###
 // Обновить издателя
 PATCH {{baseUrl}}/publisher/1
 Content-Type: application/json
@@ -124,7 +124,7 @@ Content-Type: application/json
 {
   "location": "Los Angeles"
 }
-
+###
 // Удалить издателя
 DELETE {{baseUrl}}/publisher/1
 
@@ -132,7 +132,7 @@ DELETE {{baseUrl}}/publisher/1
 ###
 ### MAGAZINES
 ###
-
+###
 // Создать журнал
 POST {{baseUrl}}/magazine
 Content-Type: application/json
@@ -142,13 +142,13 @@ Content-Type: application/json
   "issueNumber": "Issue #1",
   "publisher": 1
 }
-
+###
 // Получить все журналы
 GET {{baseUrl}}/magazine
-
+###
 // Получить журнал по ID
 GET {{baseUrl}}/magazine/1
-
+###
 // Обновить журнал
 PATCH {{baseUrl}}/magazine/1
 Content-Type: application/json
@@ -156,7 +156,7 @@ Content-Type: application/json
 {
   "issueNumber": "Issue #2"
 }
-
+###
 // Удалить журнал
 DELETE {{baseUrl}}/magazine/1
 

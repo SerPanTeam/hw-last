@@ -65,7 +65,7 @@
 ├── test
 │   ├── app.e2e-spec.ts
 │   └── jest-e2e.json
-├── ____editorconfig
+├── ___editorconfig
 ├── .gitignore
 ├── .prettierrc
 ├── codewr.js
@@ -108,6 +108,7 @@ describe('AppController', () => {
     });
   });
 });
+
 ```
 
 ## src\app.controller.ts
@@ -125,6 +126,7 @@ export class AppController {
     return this.appService.getHello();
   }
 }
+
 ```
 
 ## src\app.module.ts
@@ -148,7 +150,7 @@ import { MagazineModule } from './magazine/magazine.module';
       port: 5432, // порт PostgreSQL
       username: 'postgres', // ваш пользователь
       password: '36355693801', // ваш пароль
-      database: 'postgres', // ваша БД
+      database: 'postgres1', // ваша БД
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true, // на время разработки можно включить
     }),
@@ -163,6 +165,7 @@ import { MagazineModule } from './magazine/magazine.module';
   providers: [AppService],
 })
 export class AppModule {}
+
 ```
 
 ## src\app.service.ts
@@ -176,6 +179,7 @@ export class AppService {
     return 'Hello World!';
   }
 }
+
 ```
 
 ## src\articles\articles.controller.spec.ts
@@ -201,6 +205,7 @@ describe('ArticlesController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 ```
 
 ## src\articles\articles.controller.ts
@@ -248,6 +253,7 @@ export class ArticlesController {
     return this.articlesService.remove(+id);
   }
 }
+
 ```
 
 ## src\articles\articles.module.ts
@@ -256,12 +262,16 @@ export class ArticlesController {
 import { Module } from '@nestjs/common';
 import { ArticlesService } from './articles.service';
 import { ArticlesController } from './articles.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Article } from './entities/article.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Article])],
   controllers: [ArticlesController],
   providers: [ArticlesService],
 })
 export class ArticlesModule {}
+
 ```
 
 ## src\articles\articles.service.spec.ts
@@ -285,6 +295,7 @@ describe('ArticlesService', () => {
     expect(service).toBeDefined();
   });
 });
+
 ```
 
 ## src\articles\articles.service.ts
@@ -293,35 +304,47 @@ describe('ArticlesService', () => {
 import { Injectable } from '@nestjs/common';
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Article } from './entities/article.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class ArticlesService {
+  constructor(
+    @InjectRepository(Article)
+    private readonly articleRepository: Repository<Article>,
+  ) {}
+
   create(createArticleDto: CreateArticleDto) {
-    return 'This action adds a new article';
+    const article = this.articleRepository.create(createArticleDto);
+    return this.articleRepository.save(article);
   }
 
   findAll() {
-    return `This action returns all articles`;
+    // return `This action returns all articles`;
+    return this.articleRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} article`;
+    return this.articleRepository.findOne({ where: { id } });
   }
 
   update(id: number, updateArticleDto: UpdateArticleDto) {
-    return `This action updates a #${id} article`;
+    return this.articleRepository.update(id, updateArticleDto);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} article`;
+    return this.articleRepository.delete(id);
   }
 }
+
 ```
 
 ## src\articles\dto\create-article.dto.ts
 
 ```typescript
 export class CreateArticleDto {}
+
 ```
 
 ## src\articles\dto\update-article.dto.ts
@@ -331,6 +354,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateArticleDto } from './create-article.dto';
 
 export class UpdateArticleDto extends PartialType(CreateArticleDto) {}
+
 ```
 
 ## src\articles\entities\article.entity.ts
@@ -362,12 +386,14 @@ export class Article {
   @JoinTable()
   tags: Tag[];
 }
+
 ```
 
 ## src\magazine\dto\create-magazine.dto.ts
 
 ```typescript
 export class CreateMagazineDto {}
+
 ```
 
 ## src\magazine\dto\update-magazine.dto.ts
@@ -377,6 +403,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateMagazineDto } from './create-magazine.dto';
 
 export class UpdateMagazineDto extends PartialType(CreateMagazineDto) {}
+
 ```
 
 ## src\magazine\entities\magazine.entity.ts
@@ -400,6 +427,7 @@ export class Magazine {
   @ManyToOne(() => Publisher, (publisher) => publisher.magazines)
   publisher: Publisher;
 }
+
 ```
 
 ## src\magazine\magazine.controller.spec.ts
@@ -425,6 +453,7 @@ describe('MagazineController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 ```
 
 ## src\magazine\magazine.controller.ts
@@ -475,6 +504,7 @@ export class MagazineController {
     return this.magazineService.remove(+id);
   }
 }
+
 ```
 
 ## src\magazine\magazine.module.ts
@@ -483,12 +513,16 @@ export class MagazineController {
 import { Module } from '@nestjs/common';
 import { MagazineService } from './magazine.service';
 import { MagazineController } from './magazine.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Magazine } from './entities/magazine.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Magazine])],
   controllers: [MagazineController],
   providers: [MagazineService],
 })
 export class MagazineModule {}
+
 ```
 
 ## src\magazine\magazine.service.spec.ts
@@ -512,6 +546,7 @@ describe('MagazineService', () => {
     expect(service).toBeDefined();
   });
 });
+
 ```
 
 ## src\magazine\magazine.service.ts
@@ -520,29 +555,39 @@ describe('MagazineService', () => {
 import { Injectable } from '@nestjs/common';
 import { CreateMagazineDto } from './dto/create-magazine.dto';
 import { UpdateMagazineDto } from './dto/update-magazine.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Magazine } from './entities/magazine.entity';
 
 @Injectable()
 export class MagazineService {
+  constructor(
+    @InjectRepository(Magazine)
+    private readonly magazinRepository: Repository<Magazine>,
+  ) {}
+
   create(createMagazineDto: CreateMagazineDto) {
-    return 'This action adds a new magazine';
+    const publischer = this.magazinRepository.create(createMagazineDto);
+    return this.magazinRepository.save(publischer);
   }
 
   findAll() {
-    return `This action returns all magazine`;
+    return this.magazinRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} magazine`;
+    return this.magazinRepository.findOne({ where: { id } });
   }
 
   update(id: number, updateMagazineDto: UpdateMagazineDto) {
-    return `This action updates a #${id} magazine`;
+    return this.magazinRepository.update(id, updateMagazineDto);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} magazine`;
+    return this.magazinRepository.delete(id);
   }
 }
+
 ```
 
 ## src\main.ts
@@ -556,12 +601,14 @@ async function bootstrap() {
   await app.listen(process.env.PORT ?? 3001);
 }
 void bootstrap();
+
 ```
 
 ## src\publisher\dto\create-publisher.dto.ts
 
 ```typescript
 export class CreatePublisherDto {}
+
 ```
 
 ## src\publisher\dto\update-publisher.dto.ts
@@ -571,6 +618,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreatePublisherDto } from './create-publisher.dto';
 
 export class UpdatePublisherDto extends PartialType(CreatePublisherDto) {}
+
 ```
 
 ## src\publisher\entities\publisher.entity.ts
@@ -594,6 +642,7 @@ export class Publisher {
   @OneToMany(() => Magazine, (magazine) => magazine.publisher)
   magazines: Magazine[];
 }
+
 ```
 
 ## src\publisher\publisher.controller.spec.ts
@@ -619,6 +668,7 @@ describe('PublisherController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 ```
 
 ## src\publisher\publisher.controller.ts
@@ -669,6 +719,7 @@ export class PublisherController {
     return this.publisherService.remove(+id);
   }
 }
+
 ```
 
 ## src\publisher\publisher.module.ts
@@ -677,12 +728,16 @@ export class PublisherController {
 import { Module } from '@nestjs/common';
 import { PublisherService } from './publisher.service';
 import { PublisherController } from './publisher.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Publisher } from './entities/publisher.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Publisher])],
   controllers: [PublisherController],
   providers: [PublisherService],
 })
 export class PublisherModule {}
+
 ```
 
 ## src\publisher\publisher.service.spec.ts
@@ -706,6 +761,7 @@ describe('PublisherService', () => {
     expect(service).toBeDefined();
   });
 });
+
 ```
 
 ## src\publisher\publisher.service.ts
@@ -714,35 +770,46 @@ describe('PublisherService', () => {
 import { Injectable } from '@nestjs/common';
 import { CreatePublisherDto } from './dto/create-publisher.dto';
 import { UpdatePublisherDto } from './dto/update-publisher.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Publisher } from './entities/publisher.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class PublisherService {
+  constructor(
+    @InjectRepository(Publisher)
+    private readonly publisherRepository: Repository<Publisher>,
+  ) {}
+
   create(createPublisherDto: CreatePublisherDto) {
-    return 'This action adds a new publisher';
+    const publischer = this.publisherRepository.create(createPublisherDto);
+    return this.publisherRepository.save(publischer);
   }
 
   findAll() {
-    return `This action returns all publisher`;
+    return this.publisherRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} publisher`;
+    return this.publisherRepository.findOne({ where: { id } });
   }
 
   update(id: number, updatePublisherDto: UpdatePublisherDto) {
-    return `This action updates a #${id} publisher`;
+    return this.publisherRepository.update(id, updatePublisherDto);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} publisher`;
+    return this.publisherRepository.delete(id);
   }
 }
+
 ```
 
 ## src\tags\dto\create-tag.dto.ts
 
 ```typescript
 export class CreateTagDto {}
+
 ```
 
 ## src\tags\dto\update-tag.dto.ts
@@ -752,6 +819,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateTagDto } from './create-tag.dto';
 
 export class UpdateTagDto extends PartialType(CreateTagDto) {}
+
 ```
 
 ## src\tags\entities\tag.entity.ts
@@ -771,6 +839,7 @@ export class Tag {
   @ManyToMany(() => Article, (article) => article.tags)
   articles: Article[];
 }
+
 ```
 
 ## src\tags\tags.controller.spec.ts
@@ -796,6 +865,7 @@ describe('TagsController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 ```
 
 ## src\tags\tags.controller.ts
@@ -843,6 +913,7 @@ export class TagsController {
     return this.tagsService.remove(+id);
   }
 }
+
 ```
 
 ## src\tags\tags.module.ts
@@ -851,12 +922,16 @@ export class TagsController {
 import { Module } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { TagsController } from './tags.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Tag } from './entities/tag.entity';
 
 @Module({
+  imports: [TypeOrmModule.forFeature([Tag])],
   controllers: [TagsController],
   providers: [TagsService],
 })
 export class TagsModule {}
+
 ```
 
 ## src\tags\tags.service.spec.ts
@@ -880,6 +955,7 @@ describe('TagsService', () => {
     expect(service).toBeDefined();
   });
 });
+
 ```
 
 ## src\tags\tags.service.ts
@@ -888,35 +964,46 @@ describe('TagsService', () => {
 import { Injectable } from '@nestjs/common';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Tag } from './entities/tag.entity';
 
 @Injectable()
 export class TagsService {
+  constructor(
+    @InjectRepository(Tag)
+    private readonly tagRepository: Repository<Tag>,
+  ) {}
+
   create(createTagDto: CreateTagDto) {
-    return 'This action adds a new tag';
+    const tag = this.tagRepository.create(createTagDto);
+    return this.tagRepository.save(tag);
   }
 
   findAll() {
-    return `This action returns all tags`;
+    return this.tagRepository.find();
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} tag`;
+    return this.tagRepository.findOne({ where: { id } });
   }
 
   update(id: number, updateTagDto: UpdateTagDto) {
-    return `This action updates a #${id} tag`;
+    return this.tagRepository.update(id, updateTagDto);
   }
 
   remove(id: number) {
-    return `This action removes a #${id} tag`;
+    return this.tagRepository.delete(id);
   }
 }
+
 ```
 
 ## src\users\dto\create-user.dto.ts
 
 ```typescript
 export class CreateUserDto {}
+
 ```
 
 ## src\users\dto\update-user.dto.ts
@@ -926,6 +1013,7 @@ import { PartialType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
 
 export class UpdateUserDto extends PartialType(CreateUserDto) {}
+
 ```
 
 ## src\users\entities\user.entity.ts
@@ -950,6 +1038,7 @@ export class User {
   @Column({ default: 'user' })
   role: string;
 }
+
 ```
 
 ## src\users\users.controller.spec.ts
@@ -975,6 +1064,7 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 });
+
 ```
 
 ## src\users\users.controller.ts
@@ -1022,6 +1112,7 @@ export class UsersController {
     return this.usersService.remove(+id);
   }
 }
+
 ```
 
 ## src\users\users.module.ts
@@ -1041,6 +1132,7 @@ import { User } from './entities/user.entity';
   exports: [UsersService], // если понадобится в других местах
 })
 export class UsersModule {}
+
 ```
 
 ## src\users\users.service.spec.ts
@@ -1064,6 +1156,7 @@ describe('UsersService', () => {
     expect(service).toBeDefined();
   });
 });
+
 ```
 
 ## src\users\users.service.ts
@@ -1106,6 +1199,7 @@ export class UsersService {
     return this.userRepository.delete(id);
   }
 }
+
 ```
 
 ## test\app.e2e-spec.ts
@@ -1136,8 +1230,10 @@ describe('AppController (e2e)', () => {
       .expect('Hello World!');
   });
 });
+
 ```
 
 # Дополнительные файлы
 
 ⚠️ Файл **index.html** не найден и пропущен.
+
