@@ -7,16 +7,18 @@ import { ArticlesModule } from './articles/articles.module';
 import { TagsModule } from './tags/tags.module';
 import { PublisherModule } from './publisher/publisher.module';
 import { MagazineModule } from './magazine/magazine.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot({
       type: 'postgres',
-      host: 'localhost', // или ваш хост
+      host: '185.67.3.96', // или ваш хост
       port: 5432, // порт PostgreSQL
-      username: 'postgres', // ваш пользователь
+      username: 'panchenkowork_postgres1', // ваш пользователь
       password: '36355693801', // ваш пароль
-      database: 'postgres1', // ваша БД
+      database: 'panchenkowork_postgres1', // ваша БД
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
       synchronize: true, // на время разработки можно включить
     }),
@@ -28,6 +30,12 @@ import { MagazineModule } from './magazine/magazine.module';
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    AppService,
+  ],
 })
 export class AppModule {}

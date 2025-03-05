@@ -9,7 +9,7 @@ POST {{baseUrl}}/users
 Content-Type: application/json
 
 {
-  "email": "test4@example.com",
+  "email": "test5@example.com",
   "password": "1234567",
   "mustChangePassword": true,
   "role": "admin"
@@ -47,7 +47,8 @@ Content-Type: application/json
 
 {
   "title": "My first article",
-  "content": "Here is the content"
+  "content": "Here is the content",
+  "tags": "NestJS2"
 }
 ###
 // Получить все статьи
@@ -77,7 +78,7 @@ POST {{baseUrl}}/tags
 Content-Type: application/json
 
 {
-  "name": "NestJS"
+  "name": "NestJS2"
 }
 ###
 // Получить все теги

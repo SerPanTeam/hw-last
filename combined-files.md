@@ -13,6 +13,11 @@
 │   │   ├── articles.module.ts
 │   │   ├── articles.service.spec.ts
 │   │   └── articles.service.ts
+│   ├── common
+│   │   ├── decorators
+│   │   │   └── roles.decorator.ts
+│   │   └── guards
+│   │       └── roles.guard.ts
 │   ├── magazine
 │   │   ├── dto
 │   │   │   ├── create-magazine.dto.ts
@@ -48,7 +53,10 @@
 │   │   └── tags.service.ts
 │   ├── users
 │   │   ├── dto
+│   │   │   ├── change-email.dto.ts
+│   │   │   ├── change-password.dto.ts
 │   │   │   ├── create-user.dto.ts
+│   │   │   ├── delete-account.dto.ts
 │   │   │   └── update-user.dto.ts
 │   │   ├── entities
 │   │   │   └── user.entity.ts
@@ -141,6 +149,8 @@ import { ArticlesModule } from './articles/articles.module';
 import { TagsModule } from './tags/tags.module';
 import { PublisherModule } from './publisher/publisher.module';
 import { MagazineModule } from './magazine/magazine.module';
+import { APP_GUARD } from '@nestjs/core';
+import { RolesGuard } from './common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -162,7 +172,13 @@ import { MagazineModule } from './magazine/magazine.module';
   ],
 
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
+    },
+    AppService,
+  ],
 })
 export class AppModule {}
 
@@ -389,6 +405,67 @@ export class Article {
 
 ```
 
+## src\common\decorators\roles.decorator.ts
+
+```typescript
+import { SetMetadata } from '@nestjs/common';
+
+/**
+ * Ключ метаданных, в которые мы будем записывать список разрешённых ролей.
+ */
+export const ROLES_KEY = 'roles';
+
+/**
+ * Декоратор @Roles('admin', 'superadmin', ...)
+ * позволяет указать, какие роли имеют доступ к этому маршруту.
+ */
+export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+
+```
+
+## src\common\guards\roles.guard.ts
+
+```typescript
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  ForbiddenException,
+} from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+import { ROLES_KEY } from '../decorators/roles.decorator';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    // Получаем список ролей, записанный декоратором @Roles()
+    const requiredRoles = this.reflector.getAllAndOverride<string[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+
+    // Если у метода/класса нет декоратора @Roles, значит доступ открыт
+    if (!requiredRoles) {
+      return true;
+    }
+
+    // Получаем request и текущего пользователя
+    const request = context.switchToHttp().getRequest();
+    const user = request.user; // обычно задаётся AuthGuard-ом (JWT и т.п.)
+
+    // Если пользователя нет или у него нет нужной роли — ошибка
+    if (!user || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Access denied (insufficient role)');
+    }
+
+    return true; // всё хорошо, пропускаем дальше
+  }
+}
+
+```
+
 ## src\magazine\dto\create-magazine.dto.ts
 
 ```typescript
@@ -595,9 +672,27 @@ export class MagazineService {
 ```typescript
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
+
+  // Создаём конфигурацию для Swagger
+  const config = new DocumentBuilder()
+    .setTitle('The latest Node homework')
+    .setDescription('API Documentation for The latest Node homework')
+    .setVersion('1.0')
+    // .addBearerAuth() // если будете подключать JWT
+    .build();
+
+  // Генерируем swagger-документ
+  const document = SwaggerModule.createDocument(app, config);
+
+  // Подключаем Swagger UI по пути /api
+  SwaggerModule.setup('api', app, document);
+
   await app.listen(process.env.PORT ?? 3001);
 }
 void bootstrap();
@@ -999,10 +1094,68 @@ export class TagsService {
 
 ```
 
+## src\users\dto\change-email.dto.ts
+
+```typescript
+import { IsEmail, IsString } from 'class-validator';
+
+export class ChangeEmailDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsEmail()
+  newEmail: string;
+}
+
+```
+
+## src\users\dto\change-password.dto.ts
+
+```typescript
+import { IsString } from 'class-validator';
+
+export class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  newPassword: string;
+}
+
+```
+
 ## src\users\dto\create-user.dto.ts
 
 ```typescript
-export class CreateUserDto {}
+import { IsEmail, IsString, IsOptional } from 'class-validator';
+
+
+export class CreateUserDto {
+  @IsEmail()
+
+  email: string;
+  @IsString()
+
+  password: string;
+  @IsOptional()
+
+  mustChangePassword?: boolean;
+  @IsOptional()
+
+  role?: string;
+}
+
+```
+
+## src\users\dto\delete-account.dto.ts
+
+```typescript
+import { IsString } from 'class-validator';
+
+export class DeleteAccountDto {
+  @IsString()
+  password: string;
+}
 
 ```
 
@@ -1032,7 +1185,7 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ default: false })
+  @Column({ default: true })
   mustChangePassword: boolean;
 
   @Column({ default: 'user' })
@@ -1078,10 +1231,14 @@ import {
   Patch,
   Param,
   Delete,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+import { ChangeEmailDto } from './dto/change-email.dto';
 
 @Controller('users')
 export class UsersController {
@@ -1110,6 +1267,30 @@ export class UsersController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+  @Patch('change-password')
+  async changePassword(@Body() body: ChangePasswordDto, @Req() req) {
+    // req.user.id должен существовать, если у вас есть AuthGuard
+    // но если нет JWT, можно временно передавать id в теле,
+    // это менее безопасно
+    const userId = req.user.id;
+    return this.usersService.changePassword(userId, body);
+  }
+
+  @Delete('delete-account')
+  async deleteAccount(@Body() { password }: DeleteAccountDto, @Req() req) {
+    const userId = req.user.id; // при условии, что есть авторизация
+    return this.usersService.deleteAccount(userId, password);
+  }
+
+  @Patch('change-email')
+  async changeEmail(
+    @Body() { currentPassword, newEmail }: ChangeEmailDto,
+    @Req() req,
+  ) {
+    const userId = req.user.id;
+    return this.usersService.changeEmail(userId, currentPassword, newEmail);
   }
 }
 
@@ -1163,12 +1344,18 @@ describe('UsersService', () => {
 
 ```typescript
 // users.service.ts
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import * as bcrypt from 'bcrypt';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -1177,8 +1364,19 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  create(createUserDto: CreateUserDto) {
-    // Например:
+  async create(createUserDto: CreateUserDto) {
+    const existing = await this.userRepository.findOne({
+      where: { email: createUserDto.email },
+    });
+    if (existing) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    // Хешируем пароль
+    const salt = await bcrypt.genSalt();
+    const hash = await bcrypt.hash(createUserDto.password, salt);
+    createUserDto.password = hash;
+
     const user = this.userRepository.create(createUserDto);
     return this.userRepository.save(user);
   }
@@ -1197,6 +1395,64 @@ export class UsersService {
 
   remove(id: number) {
     return this.userRepository.delete(id);
+  }
+
+  async changePassword(
+    userId: number,
+    { currentPassword, newPassword }: ChangePasswordDto,
+  ) {
+    const user = await this.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      throw new BadRequestException('Incorrect current password');
+    }
+
+    // Хешируем новый пароль
+    const salt = await bcrypt.genSalt();
+    user.password = await bcrypt.hash(newPassword, salt);
+
+    // Сбрасываем mustChangePassword
+    user.mustChangePassword = false;
+    return this.userRepository.save(user);
+  }
+
+  async deleteAccount(userId: number, password: string) {
+    const user = await this.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) {
+      throw new BadRequestException('Incorrect password');
+    }
+    await this.userRepository.delete(userId);
+    return { message: 'Account deleted' };
+  }
+
+  async changeEmail(userId: number, currentPassword: string, newEmail: string) {
+    const user = await this.findOne(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const match = await bcrypt.compare(currentPassword, user.password);
+    if (!match) {
+      throw new BadRequestException('Incorrect current password');
+    }
+
+    // Проверяем, не занят ли уже newEmail
+    const existing = await this.userRepository.findOne({
+      where: { email: newEmail },
+    });
+    if (existing) {
+      throw new BadRequestException('Email already exists');
+    }
+
+    user.email = newEmail;
+    await this.userRepository.save(user);
+    return { message: 'Email updated' };
   }
 }
 

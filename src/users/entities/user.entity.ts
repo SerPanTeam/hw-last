@@ -11,7 +11,7 @@ export class User {
   @Column()
   password: string;
 
-  @Column({ default: false })
+  @Column({ default: true })
   mustChangePassword: boolean;
 
   @Column({ default: 'user' })
